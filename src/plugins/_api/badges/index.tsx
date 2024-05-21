@@ -29,7 +29,7 @@ import { Margins } from "@utils/margins";
 import { isPluginDev } from "@utils/misc";
 import { closeModal, Modals, openModal } from "@utils/modal";
 import definePlugin from "@utils/types";
-import { Forms, Toasts } from "@webpack/common";
+import { Forms, Toasts, UserProfileStore } from "@webpack/common";
 
 const CONTRIBUTOR_BADGE = "https://vencord.dev/assets/favicon.png";
 
@@ -85,6 +85,15 @@ export default definePlugin({
                     replace: "...($1.onClick && { onClick: vcE => $1.onClick(vcE, arguments[0]) }),$&"
                 }
             ]
+        },
+        /* Fix unloaded profiles not showing badges */
+        {
+            find: "User Profile Modal - Send Message Button",
+            replacement: {
+                match: /color:(\i)\.default\.unsafe_rawColors\.YELLOW_300\.css\}\)\}\):/,
+                replace: "color:$1.default.unsafe_rawColors.YELLOW_300.css})}) : null, $self.hasBadges(arguments[0]) &&"
+
+            }
         }
     ],
 
@@ -109,6 +118,11 @@ export default definePlugin({
         return <Component {...badge} />;
     }, { noop: true }),
 
+
+    hasBadges(args: BadgeUserArgs) {
+        const profile = UserProfileStore.getUserProfile(args.user.id);
+        return (profile?.badges || profile?.guild_badges || Vencord.Api.Badges._getBadges(args)).length > 0;
+    },
 
     getDonorBadges(userId: string) {
         return DonorBadges[userId]?.map(badge => ({
