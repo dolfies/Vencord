@@ -121,7 +121,7 @@ export function handleSettingsUpdate(data: string, force?: boolean, shouldNotify
     const newVersion = proto?.versions?.dataVersion ?? 0;
 
     _handleSettingsUpdate(proto, force, shouldNotify);
-    cloudSettingsLogger.info(`Settings loaded from cloud successfully! Current version: ${newVersion}`);
+    cloudSettingsLogger.info(`Settings loaded from server successfully! Current version: ${newVersion}`);
     if (shouldNotify && newVersion > oldVersion)
         showNotification({
             title: "Cloud Settings",
@@ -143,7 +143,7 @@ function _handleSettingsUpdate(proto: TestUserSettings, force?: boolean, shouldN
         if (shouldNotify)
             showNotification({
                 title: "Cloud Settings",
-                body: "Your local settings are newer than the cloud ones.",
+                body: "Your local settings are newer than the server.",
                 noPersist: true,
             });
         return;
@@ -182,7 +182,7 @@ export async function putCloudSettings(manual?: boolean, requiredVersion?: numbe
             cloudSettingsLogger.error(`Failed to sync up, API returned ${res.status} ${res.body}`);
             showNotification({
                 title: "Cloud Settings",
-                body: `Could not synchronize settings to proto (API returned ${res.status}, error code ${res.body?.code}: ${res.body?.message}).`,
+                body: `Could not synchronize settings to the server (API returned ${res.status}, error code ${res.body?.code}: ${res.body?.message}).`,
                 color: "var(--red-360)"
             });
             return;
@@ -200,7 +200,7 @@ export async function putCloudSettings(manual?: boolean, requiredVersion?: numbe
         if (manual) {
             showNotification({
                 title: "Cloud Settings",
-                body: "Synchronized settings to the cloud!",
+                body: "Synchronized settings to the server!",
                 noPersist: true,
             });
         }
@@ -208,7 +208,7 @@ export async function putCloudSettings(manual?: boolean, requiredVersion?: numbe
         cloudSettingsLogger.error("Failed to sync up", e);
         showNotification({
             title: "Cloud Settings",
-            body: `Could not synchronize settings to the cloud (${e.toString()}).`,
+            body: `Could not synchronize settings to the server (${e.toString()}).`,
             color: "var(--red-360)"
         });
     }
@@ -221,7 +221,7 @@ export async function getCloudSettings(shouldNotify = true, force = false) {
             cloudSettingsLogger.error(`Failed to sync down, API returned ${res.status} ${res.body}`);
             showNotification({
                 title: "Cloud Settings",
-                body: `Could not synchronize settings from proto (API returned ${res.status}).`,
+                body: `Could not synchronize settings from the server (API returned ${res.status}).`,
                 color: "var(--red-360)"
             });
             return false;
@@ -232,7 +232,7 @@ export async function getCloudSettings(shouldNotify = true, force = false) {
         cloudSettingsLogger.error("Failed to sync down", e);
         showNotification({
             title: "Cloud Settings",
-            body: `Could not synchronize settings from the cloud (${e.toString()}).`,
+            body: `Could not synchronize settings (${e.toString()}).`,
             color: "var(--red-360)"
         });
 
@@ -245,27 +245,27 @@ export async function deleteCloudSettings() {
     try {
         const res = await RestAPI.patch({ url: "/users/@me/settings-proto/3", body: { settings: data } });
         if (!res.ok) {
-            cloudSettingsLogger.error(`Failed to delete cloud settings, API returned ${res.status} ${res.body}`);
+            cloudSettingsLogger.error(`Failed to delete server settings, API returned ${res.status} ${res.body}`);
             showNotification({
                 title: "Cloud Settings",
-                body: `Could not delete settings from proto (API returned ${res.status}).`,
+                body: `Could not delete settings from the server (API returned ${res.status}).`,
                 color: "var(--red-360)"
             });
             return;
         }
 
-        cloudSettingsLogger.info("Settings deleted from cloud successfully");
+        cloudSettingsLogger.info("Settings deleted from server successfully");
         showNotification({
             title: "Cloud Settings",
-            body: "Deleted settings from the cloud!",
+            body: "Deleted settings from the server!",
             color: "var(--green-360)"
         });
     }
     catch (e: any) {
-        cloudSettingsLogger.error("Failed to delete cloud settings", e);
+        cloudSettingsLogger.error("Failed to delete server settings", e);
         showNotification({
             title: "Cloud Settings",
-            body: `Could not delete settings from the cloud (${e.toString()}).`,
+            body: `Could not delete settings (${e.toString()}).`,
             color: "var(--red-360)"
         });
     }
