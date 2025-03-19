@@ -19,9 +19,9 @@ export interface TestUserSettings {
      */
     versions?: TestUserSettings_Versions;
     /**
-     * @generated from protobuf field: optional TestUserSettings.Settings settings = 2;
+     * @generated from protobuf field: optional TestUserSettings.ClientSettings settings = 2;
      */
-    settings?: TestUserSettings_Settings;
+    settings?: TestUserSettings_ClientSettings;
 }
 /**
  * @generated from protobuf message TestUserSettings.Versions
@@ -41,42 +41,33 @@ export interface TestUserSettings_Versions {
     dataVersion: number;
 }
 /**
- * @generated from protobuf message TestUserSettings.SharedSettings
+ * @generated from protobuf message TestUserSettings.ClientMod
  */
-export interface TestUserSettings_SharedSettings {
+export interface TestUserSettings_ClientMod {
     /**
      * @generated from protobuf field: bytes data = 1;
      */
     data: Uint8Array;
 }
 /**
- * @generated from protobuf message TestUserSettings.VencordSettings
+ * @generated from protobuf message TestUserSettings.ClientSettings
  */
-export interface TestUserSettings_VencordSettings {
+export interface TestUserSettings_ClientSettings {
     /**
-     * @generated from protobuf field: bytes data = 1;
+     * @generated from protobuf field: TestUserSettings.ClientMod shared = 1;
      */
-    data: Uint8Array;
-}
-/**
- * @generated from protobuf message TestUserSettings.Settings
- */
-export interface TestUserSettings_Settings {
+    shared?: TestUserSettings_ClientMod;
     /**
-     * @generated from protobuf field: TestUserSettings.SharedSettings shared = 1;
+     * @generated from protobuf field: TestUserSettings.ClientMod vencord = 2;
      */
-    shared?: TestUserSettings_SharedSettings;
-    /**
-     * @generated from protobuf field: TestUserSettings.VencordSettings vencord = 2;
-     */
-    vencord?: TestUserSettings_VencordSettings;
+    vencord?: TestUserSettings_ClientMod;
 }
 // @generated message type with reflection information, may provide speed optimized methods
 class TestUserSettings$Type extends MessageType<TestUserSettings> {
     constructor() {
         super("TestUserSettings", [
             { no: 1, name: "versions", kind: "message", T: () => TestUserSettings_Versions },
-            { no: 2, name: "settings", kind: "message", T: () => TestUserSettings_Settings }
+            { no: 2, name: "settings", kind: "message", T: () => TestUserSettings_ClientSettings }
         ]);
     }
     create(value?: PartialMessage<TestUserSettings>): TestUserSettings {
@@ -93,8 +84,8 @@ class TestUserSettings$Type extends MessageType<TestUserSettings> {
                 case /* optional TestUserSettings.Versions versions */ 1:
                     message.versions = TestUserSettings_Versions.internalBinaryRead(reader, reader.uint32(), options, message.versions);
                     break;
-                case /* optional TestUserSettings.Settings settings */ 2:
-                    message.settings = TestUserSettings_Settings.internalBinaryRead(reader, reader.uint32(), options, message.settings);
+                case /* optional TestUserSettings.ClientSettings settings */ 2:
+                    message.settings = TestUserSettings_ClientSettings.internalBinaryRead(reader, reader.uint32(), options, message.settings);
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -111,9 +102,9 @@ class TestUserSettings$Type extends MessageType<TestUserSettings> {
         /* optional TestUserSettings.Versions versions = 1; */
         if (message.versions)
             TestUserSettings_Versions.internalBinaryWrite(message.versions, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
-        /* optional TestUserSettings.Settings settings = 2; */
+        /* optional TestUserSettings.ClientSettings settings = 2; */
         if (message.settings)
-            TestUserSettings_Settings.internalBinaryWrite(message.settings, writer.tag(2, WireType.LengthDelimited).fork(), options).join();
+            TestUserSettings_ClientSettings.internalBinaryWrite(message.settings, writer.tag(2, WireType.LengthDelimited).fork(), options).join();
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -188,20 +179,20 @@ class TestUserSettings_Versions$Type extends MessageType<TestUserSettings_Versio
  */
 export const TestUserSettings_Versions = new TestUserSettings_Versions$Type();
 // @generated message type with reflection information, may provide speed optimized methods
-class TestUserSettings_SharedSettings$Type extends MessageType<TestUserSettings_SharedSettings> {
+class TestUserSettings_ClientMod$Type extends MessageType<TestUserSettings_ClientMod> {
     constructor() {
-        super("TestUserSettings.SharedSettings", [
+        super("TestUserSettings.ClientMod", [
             { no: 1, name: "data", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
         ]);
     }
-    create(value?: PartialMessage<TestUserSettings_SharedSettings>): TestUserSettings_SharedSettings {
+    create(value?: PartialMessage<TestUserSettings_ClientMod>): TestUserSettings_ClientMod {
         const message = globalThis.Object.create((this.messagePrototype!));
         message.data = new Uint8Array(0);
         if (value !== undefined)
-            reflectionMergePartial<TestUserSettings_SharedSettings>(this, message, value);
+            reflectionMergePartial<TestUserSettings_ClientMod>(this, message, value);
         return message;
     }
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: TestUserSettings_SharedSettings): TestUserSettings_SharedSettings {
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: TestUserSettings_ClientMod): TestUserSettings_ClientMod {
         let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
@@ -220,7 +211,7 @@ class TestUserSettings_SharedSettings$Type extends MessageType<TestUserSettings_
         }
         return message;
     }
-    internalBinaryWrite(message: TestUserSettings_SharedSettings, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+    internalBinaryWrite(message: TestUserSettings_ClientMod, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
         /* bytes data = 1; */
         if (message.data.length)
             writer.tag(1, WireType.LengthDelimited).bytes(message.data);
@@ -231,30 +222,33 @@ class TestUserSettings_SharedSettings$Type extends MessageType<TestUserSettings_
     }
 }
 /**
- * @generated MessageType for protobuf message TestUserSettings.SharedSettings
+ * @generated MessageType for protobuf message TestUserSettings.ClientMod
  */
-export const TestUserSettings_SharedSettings = new TestUserSettings_SharedSettings$Type();
+export const TestUserSettings_ClientMod = new TestUserSettings_ClientMod$Type();
 // @generated message type with reflection information, may provide speed optimized methods
-class TestUserSettings_VencordSettings$Type extends MessageType<TestUserSettings_VencordSettings> {
+class TestUserSettings_ClientSettings$Type extends MessageType<TestUserSettings_ClientSettings> {
     constructor() {
-        super("TestUserSettings.VencordSettings", [
-            { no: 1, name: "data", kind: "scalar", T: 12 /*ScalarType.BYTES*/ }
+        super("TestUserSettings.ClientSettings", [
+            { no: 1, name: "shared", kind: "message", T: () => TestUserSettings_ClientMod },
+            { no: 2, name: "vencord", kind: "message", T: () => TestUserSettings_ClientMod }
         ]);
     }
-    create(value?: PartialMessage<TestUserSettings_VencordSettings>): TestUserSettings_VencordSettings {
+    create(value?: PartialMessage<TestUserSettings_ClientSettings>): TestUserSettings_ClientSettings {
         const message = globalThis.Object.create((this.messagePrototype!));
-        message.data = new Uint8Array(0);
         if (value !== undefined)
-            reflectionMergePartial<TestUserSettings_VencordSettings>(this, message, value);
+            reflectionMergePartial<TestUserSettings_ClientSettings>(this, message, value);
         return message;
     }
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: TestUserSettings_VencordSettings): TestUserSettings_VencordSettings {
+    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: TestUserSettings_ClientSettings): TestUserSettings_ClientSettings {
         let message = target ?? this.create(), end = reader.pos + length;
         while (reader.pos < end) {
             let [fieldNo, wireType] = reader.tag();
             switch (fieldNo) {
-                case /* bytes data */ 1:
-                    message.data = reader.bytes();
+                case /* TestUserSettings.ClientMod shared */ 1:
+                    message.shared = TestUserSettings_ClientMod.internalBinaryRead(reader, reader.uint32(), options, message.shared);
+                    break;
+                case /* TestUserSettings.ClientMod vencord */ 2:
+                    message.vencord = TestUserSettings_ClientMod.internalBinaryRead(reader, reader.uint32(), options, message.vencord);
                     break;
                 default:
                     let u = options.readUnknownField;
@@ -267,63 +261,13 @@ class TestUserSettings_VencordSettings$Type extends MessageType<TestUserSettings
         }
         return message;
     }
-    internalBinaryWrite(message: TestUserSettings_VencordSettings, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        /* bytes data = 1; */
-        if (message.data.length)
-            writer.tag(1, WireType.LengthDelimited).bytes(message.data);
-        let u = options.writeUnknownFields;
-        if (u !== false)
-            (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
-        return writer;
-    }
-}
-/**
- * @generated MessageType for protobuf message TestUserSettings.VencordSettings
- */
-export const TestUserSettings_VencordSettings = new TestUserSettings_VencordSettings$Type();
-// @generated message type with reflection information, may provide speed optimized methods
-class TestUserSettings_Settings$Type extends MessageType<TestUserSettings_Settings> {
-    constructor() {
-        super("TestUserSettings.Settings", [
-            { no: 1, name: "shared", kind: "message", T: () => TestUserSettings_SharedSettings },
-            { no: 2, name: "vencord", kind: "message", T: () => TestUserSettings_VencordSettings }
-        ]);
-    }
-    create(value?: PartialMessage<TestUserSettings_Settings>): TestUserSettings_Settings {
-        const message = globalThis.Object.create((this.messagePrototype!));
-        if (value !== undefined)
-            reflectionMergePartial<TestUserSettings_Settings>(this, message, value);
-        return message;
-    }
-    internalBinaryRead(reader: IBinaryReader, length: number, options: BinaryReadOptions, target?: TestUserSettings_Settings): TestUserSettings_Settings {
-        let message = target ?? this.create(), end = reader.pos + length;
-        while (reader.pos < end) {
-            let [fieldNo, wireType] = reader.tag();
-            switch (fieldNo) {
-                case /* TestUserSettings.SharedSettings shared */ 1:
-                    message.shared = TestUserSettings_SharedSettings.internalBinaryRead(reader, reader.uint32(), options, message.shared);
-                    break;
-                case /* TestUserSettings.VencordSettings vencord */ 2:
-                    message.vencord = TestUserSettings_VencordSettings.internalBinaryRead(reader, reader.uint32(), options, message.vencord);
-                    break;
-                default:
-                    let u = options.readUnknownField;
-                    if (u === "throw")
-                        throw new globalThis.Error(`Unknown field ${fieldNo} (wire type ${wireType}) for ${this.typeName}`);
-                    let d = reader.skip(wireType);
-                    if (u !== false)
-                        (u === true ? UnknownFieldHandler.onRead : u)(this.typeName, message, fieldNo, wireType, d);
-            }
-        }
-        return message;
-    }
-    internalBinaryWrite(message: TestUserSettings_Settings, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
-        /* TestUserSettings.SharedSettings shared = 1; */
+    internalBinaryWrite(message: TestUserSettings_ClientSettings, writer: IBinaryWriter, options: BinaryWriteOptions): IBinaryWriter {
+        /* TestUserSettings.ClientMod shared = 1; */
         if (message.shared)
-            TestUserSettings_SharedSettings.internalBinaryWrite(message.shared, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
-        /* TestUserSettings.VencordSettings vencord = 2; */
+            TestUserSettings_ClientMod.internalBinaryWrite(message.shared, writer.tag(1, WireType.LengthDelimited).fork(), options).join();
+        /* TestUserSettings.ClientMod vencord = 2; */
         if (message.vencord)
-            TestUserSettings_VencordSettings.internalBinaryWrite(message.vencord, writer.tag(2, WireType.LengthDelimited).fork(), options).join();
+            TestUserSettings_ClientMod.internalBinaryWrite(message.vencord, writer.tag(2, WireType.LengthDelimited).fork(), options).join();
         let u = options.writeUnknownFields;
         if (u !== false)
             (u == true ? UnknownFieldHandler.onWrite : u)(this.typeName, message, writer);
@@ -331,6 +275,6 @@ class TestUserSettings_Settings$Type extends MessageType<TestUserSettings_Settin
     }
 }
 /**
- * @generated MessageType for protobuf message TestUserSettings.Settings
+ * @generated MessageType for protobuf message TestUserSettings.ClientSettings
  */
-export const TestUserSettings_Settings = new TestUserSettings_Settings$Type();
+export const TestUserSettings_ClientSettings = new TestUserSettings_ClientSettings$Type();
