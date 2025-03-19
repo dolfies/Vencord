@@ -46,9 +46,7 @@ if (IS_REPORTER) {
 }
 
 async function syncSettings() {
-    if (
-        Settings.cloud.settingsSync// if it's enabled
-    ) {
+    if (Settings.cloud.settingsSync) {
         const updated = await getCloudSettings();
         if (localStorage.Vencord_settingsDirty) {
             await putCloudSettings();
