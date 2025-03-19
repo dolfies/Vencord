@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+message TestUserSettings {
+  message Versions {
+    uint32 client_version = 1;
+    uint32 server_version = 2;
+    uint32 data_version = 3;
+  }
+
+  message SharedSettings {
+    bytes data = 1;
+  }
+
+  message VencordSettings {
+    bytes data = 1;
+  }
+
+  message Settings {
+    SharedSettings shared = 1;
+    VencordSettings vencord = 2;
+  }
+
+  optional Versions versions = 1;
+  optional Settings settings = 2;
+}

@@ -17,14 +17,17 @@
 */
 
 import { showNotification } from "@api/Notifications";
-import { PlainSettings, Settings } from "@api/Settings";
-import { moment, Toasts } from "@webpack/common";
+import { PlainSettings } from "@api/Settings";
+import { base64decode, base64encode } from "@protobuf-ts/runtime";
+import { moment, RestAPI, Toasts } from "@webpack/common";
 import { deflateSync, inflateSync } from "fflate";
 
-import { getCloudAuth, getCloudUrl } from "./cloud";
+import { TestUserSettings } from "../proto/TestUserSettings";
 import { Logger } from "./Logger";
 import { relaunch } from "./native";
 import { chooseFile, saveFile } from "./web";
+
+let protoSettings: TestUserSettings;
 
 export async function importSettings(data: string) {
     try {
@@ -110,36 +113,82 @@ export async function uploadSettingsBackup(showToast = true): Promise<void> {
 }
 
 // Cloud settings
-const cloudSettingsLogger = new Logger("Cloud:Settings", "#39b7e0");
+const cloudSettingsLogger = new Logger("Proto:Settings", "#39b7e0");
 
-export async function putCloudSettings(manual?: boolean) {
-    const settings = await exportSettings({ minify: true });
+export function handleSettingsUpdate(data: string, force?: boolean, shouldNotify?: boolean) {
+    const proto = unwrapProto(data);
+    const oldVersion = PlainSettings.cloud.version;
+    const newVersion = proto?.versions?.dataVersion ?? 0;
 
-    try {
-        const res = await fetch(new URL("/v1/settings", getCloudUrl()), {
-            method: "PUT",
-            headers: {
-                Authorization: await getCloudAuth(),
-                "Content-Type": "application/octet-stream"
-            },
-            body: deflateSync(new TextEncoder().encode(settings))
-        });
-
-        if (!res.ok) {
-            cloudSettingsLogger.error(`Failed to sync up, API returned ${res.status}`);
+    if (!force && newVersion < oldVersion) {
+        if (shouldNotify)
             showNotification({
                 title: "Cloud Settings",
-                body: `Could not synchronize settings to cloud (API returned ${res.status}).`,
+                body: "Your local settings are newer than the cloud ones.",
+                noPersist: true,
+            });
+        return;
+    }
+
+    _handleSettingsUpdate(proto);
+    cloudSettingsLogger.info(`Settings loaded from cloud successfully! Current version: ${protoSettings?.versions?.dataVersion}`);
+    if (shouldNotify && newVersion > oldVersion)
+        showNotification({
+            title: "Cloud Settings",
+            body: "Your settings have been updated! Click here to restart to fully apply changes!",
+            color: "var(--green-360)",
+            onClick: IS_WEB ? () => location.reload() : relaunch,
+            noPersist: true
+        });
+    return newVersion > oldVersion;
+}
+
+function _handleSettingsUpdate(proto: TestUserSettings) {
+    protoSettings = proto;
+    importSettings(new TextDecoder().decode(inflateSync(proto.settings.vencord.data)));
+
+    PlainSettings.cloud.version = proto?.versions?.dataVersion ?? 0;
+    VencordNative.settings.set(PlainSettings);
+}
+
+export function unwrapProto(data: string) {
+    return TestUserSettings.fromBinary(base64decode(data));
+}
+
+export function wrapProto(data: string) {
+    if (!protoSettings)
+        throw new Error("Settings not initialized");
+    protoSettings.settings.vencord.data = deflateSync(new TextEncoder().encode(data));
+    return base64encode(TestUserSettings.toBinary(protoSettings));
+}
+
+export async function putCloudSettings(manual?: boolean, requiredVersion?: number) {
+    const settings = await exportSettings({ minify: true });
+    const data = wrapProto(settings);
+
+    try {
+        const res = await RestAPI.patch(
+            { url: "/users/@me/settings-proto/3", body: { settings: data, required_version: requiredVersion } }
+        );
+
+        if (!res.ok) {
+            cloudSettingsLogger.error(`Failed to sync up, API returned ${res.status} ${res.body}`);
+            showNotification({
+                title: "Cloud Settings",
+                body: `Could not synchronize settings to proto (API returned ${res.status}, error code ${res.body?.code}: ${res.body?.message}).`,
                 color: "var(--red-360)"
             });
             return;
         }
 
-        const { written } = await res.json();
-        PlainSettings.cloud.settingsSyncVersion = written;
-        VencordNative.settings.set(PlainSettings);
+        const { settings, out_of_date } = res.body;
+        handleSettingsUpdate(settings);
+        if (out_of_date) {
+            cloudSettingsLogger.warn("Proto was out of date, discarding changes");
+            return await putCloudSettings(manual);
+        }
 
-        cloudSettingsLogger.info("Settings uploaded to cloud successfully");
+        cloudSettingsLogger.info("Settings uploaded successfully");
 
         if (manual) {
             showNotification({
@@ -160,81 +209,18 @@ export async function putCloudSettings(manual?: boolean) {
 
 export async function getCloudSettings(shouldNotify = true, force = false) {
     try {
-        const res = await fetch(new URL("/v1/settings", getCloudUrl()), {
-            method: "GET",
-            headers: {
-                Authorization: await getCloudAuth(),
-                Accept: "application/octet-stream",
-                "If-None-Match": Settings.cloud.settingsSyncVersion.toString()
-            },
-        });
-
-        if (res.status === 404) {
-            cloudSettingsLogger.info("No settings on the cloud");
-            if (shouldNotify)
-                showNotification({
-                    title: "Cloud Settings",
-                    body: "There are no settings in the cloud.",
-                    noPersist: true
-                });
-            return false;
-        }
-
-        if (res.status === 304) {
-            cloudSettingsLogger.info("Settings up to date");
-            if (shouldNotify)
-                showNotification({
-                    title: "Cloud Settings",
-                    body: "Your settings are up to date.",
-                    noPersist: true
-                });
-            return false;
-        }
-
+        const res = await RestAPI.get({ url: "/users/@me/settings-proto/3" });
         if (!res.ok) {
-            cloudSettingsLogger.error(`Failed to sync down, API returned ${res.status}`);
+            cloudSettingsLogger.error(`Failed to sync down, API returned ${res.status} ${res.body}`);
             showNotification({
                 title: "Cloud Settings",
-                body: `Could not synchronize settings from the cloud (API returned ${res.status}).`,
+                body: `Could not synchronize settings from proto (API returned ${res.status}).`,
                 color: "var(--red-360)"
             });
             return false;
         }
 
-        const written = Number(res.headers.get("etag")!);
-        const localWritten = Settings.cloud.settingsSyncVersion;
-
-        // don't need to check for written > localWritten because the server will return 304 due to if-none-match
-        if (!force && written < localWritten) {
-            if (shouldNotify)
-                showNotification({
-                    title: "Cloud Settings",
-                    body: "Your local settings are newer than the cloud ones.",
-                    noPersist: true,
-                });
-            return;
-        }
-
-        const data = await res.arrayBuffer();
-
-        const settings = new TextDecoder().decode(inflateSync(new Uint8Array(data)));
-        await importSettings(settings);
-
-        // sync with server timestamp instead of local one
-        PlainSettings.cloud.settingsSyncVersion = written;
-        VencordNative.settings.set(PlainSettings);
-
-        cloudSettingsLogger.info("Settings loaded from cloud successfully");
-        if (shouldNotify)
-            showNotification({
-                title: "Cloud Settings",
-                body: "Your settings have been updated! Click here to restart to fully apply changes!",
-                color: "var(--green-360)",
-                onClick: IS_WEB ? () => location.reload() : relaunch,
-                noPersist: true
-            });
-
-        return true;
+        return handleSettingsUpdate(res.body.settings, force, shouldNotify);
     } catch (e: any) {
         cloudSettingsLogger.error("Failed to sync down", e);
         showNotification({
@@ -248,17 +234,14 @@ export async function getCloudSettings(shouldNotify = true, force = false) {
 }
 
 export async function deleteCloudSettings() {
+    const data = wrapProto("");
     try {
-        const res = await fetch(new URL("/v1/settings", getCloudUrl()), {
-            method: "DELETE",
-            headers: { Authorization: await getCloudAuth() },
-        });
-
+        const res = await RestAPI.patch({ url: "/users/@me/settings-proto/3", body: { settings: data } });
         if (!res.ok) {
-            cloudSettingsLogger.error(`Failed to delete, API returned ${res.status}`);
+            cloudSettingsLogger.error(`Failed to delete cloud settings, API returned ${res.status} ${res.body}`);
             showNotification({
                 title: "Cloud Settings",
-                body: `Could not delete settings (API returned ${res.status}).`,
+                body: `Could not delete settings from proto (API returned ${res.status}).`,
                 color: "var(--red-360)"
             });
             return;
@@ -267,14 +250,15 @@ export async function deleteCloudSettings() {
         cloudSettingsLogger.info("Settings deleted from cloud successfully");
         showNotification({
             title: "Cloud Settings",
-            body: "Settings deleted from cloud!",
+            body: "Deleted settings from the cloud!",
             color: "var(--green-360)"
         });
-    } catch (e: any) {
-        cloudSettingsLogger.error("Failed to delete", e);
+    }
+    catch (e: any) {
+        cloudSettingsLogger.error("Failed to delete cloud settings", e);
         showNotification({
             title: "Cloud Settings",
-            body: `Could not delete settings (${e.toString()}).`,
+            body: `Could not delete settings from the cloud (${e.toString()}).`,
             color: "var(--red-360)"
         });
     }

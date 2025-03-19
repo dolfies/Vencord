@@ -26,6 +26,7 @@ import UpdaterTab from "@components/VencordSettings/UpdaterTab";
 import VencordTab from "@components/VencordSettings/VencordTab";
 import { Devs } from "@utils/constants";
 import { getIntlMessage } from "@utils/discord";
+import { handleSettingsUpdate } from "@utils/settingsSync";
 import definePlugin, { OptionType } from "@utils/types";
 import { React } from "@webpack/common";
 
@@ -33,6 +34,18 @@ import gitHash from "~git-hash";
 
 type SectionType = "HEADER" | "DIVIDER" | "CUSTOM";
 type SectionTypes = Record<SectionType, SectionType>;
+
+type UserSettingsProtoUpdate = {
+    settings: UserSettingsProto;
+    resetEditInfo: boolean;
+    wasSaved: boolean;
+    local: boolean;
+};
+
+type UserSettingsProto = {
+    type: 1 | 2 | 3;
+    settings: string;
+};
 
 export default definePlugin({
     name: "Settings",
@@ -79,6 +92,16 @@ export default definePlugin({
             }
         }
     ],
+
+    flux: {
+        // Receive settings updates from other clients
+        USER_SETTINGS_PROTO_UPDATE: ({ local, settings: { type, settings } }: UserSettingsProtoUpdate) => {
+            if (type !== 3 || local) return;
+
+            // If received from the Gateway overwrite local settings, they were changed on a different client
+            handleSettingsUpdate(settings, true, true);
+        }
+    },
 
     customSections: [] as ((SectionTypes: SectionTypes) => any)[],
 

@@ -70,10 +70,8 @@ export interface Settings {
     };
 
     cloud: {
-        authenticated: boolean;
-        url: string;
         settingsSync: boolean;
-        settingsSyncVersion: number;
+        version: number;
     };
 }
 
@@ -101,10 +99,8 @@ const DefaultSettings: Settings = {
     },
 
     cloud: {
-        authenticated: false,
-        url: "https://api.vencord.dev/",
-        settingsSync: false,
-        settingsSyncVersion: 0
+        settingsSync: true,
+        version: 0
     }
 };
 
@@ -112,7 +108,7 @@ const settings = !IS_REPORTER ? VencordNative.settings.get() : {} as Settings;
 mergeDefaults(settings, DefaultSettings);
 
 const saveSettingsOnFrequentAction = debounce(async () => {
-    if (Settings.cloud.settingsSync && Settings.cloud.authenticated) {
+    if (Settings.cloud.settingsSync) {
         await putCloudSettings();
         delete localStorage.Vencord_settingsDirty;
     }
