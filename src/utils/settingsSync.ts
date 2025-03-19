@@ -120,18 +120,8 @@ export function handleSettingsUpdate(data: string, force?: boolean, shouldNotify
     const oldVersion = PlainSettings.cloud.version;
     const newVersion = proto?.versions?.dataVersion ?? 0;
 
-    if (!force && newVersion < oldVersion) {
-        if (shouldNotify)
-            showNotification({
-                title: "Cloud Settings",
-                body: "Your local settings are newer than the cloud ones.",
-                noPersist: true,
-            });
-        return;
-    }
-
-    _handleSettingsUpdate(proto);
-    cloudSettingsLogger.info(`Settings loaded from cloud successfully! Current version: ${protoSettings?.versions?.dataVersion}`);
+    _handleSettingsUpdate(proto, force, shouldNotify);
+    cloudSettingsLogger.info(`Settings loaded from cloud successfully! Current version: ${newVersion}`);
     if (shouldNotify && newVersion > oldVersion)
         showNotification({
             title: "Cloud Settings",
@@ -143,9 +133,25 @@ export function handleSettingsUpdate(data: string, force?: boolean, shouldNotify
     return newVersion > oldVersion;
 }
 
-function _handleSettingsUpdate(proto: TestUserSettings) {
+function _handleSettingsUpdate(proto: TestUserSettings, force?: boolean, shouldNotify?: boolean) {
     protoSettings = proto;
-    importSettings(new TextDecoder().decode(inflateSync(proto.settings.vencord.data)));
+
+    const oldVersion = PlainSettings.cloud.version;
+    const newVersion = proto?.versions?.dataVersion ?? 0;
+    if (!force && newVersion < oldVersion) {
+        cloudSettingsLogger.warn("Settings are older than the current version, discarding changes");
+        if (shouldNotify)
+            showNotification({
+                title: "Cloud Settings",
+                body: "Your local settings are newer than the cloud ones.",
+                noPersist: true,
+            });
+        return;
+    }
+
+    const deflated = proto?.settings?.vencord?.data;
+    if (deflated)
+        importSettings(new TextDecoder().decode(inflateSync(deflated)));
 
     PlainSettings.cloud.version = proto?.versions?.dataVersion ?? 0;
     VencordNative.settings.set(PlainSettings);
@@ -158,7 +164,8 @@ export function unwrapProto(data: string) {
 export function wrapProto(data: string) {
     if (!protoSettings)
         throw new Error("Settings not initialized");
-    protoSettings.settings.vencord.data = deflateSync(new TextEncoder().encode(data));
+    protoSettings.settings ??= {};
+    protoSettings.settings.vencord = { data: deflateSync(new TextEncoder().encode(data)) };
     return base64encode(TestUserSettings.toBinary(protoSettings));
 }
 

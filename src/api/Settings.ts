@@ -100,7 +100,7 @@ const DefaultSettings: Settings = {
 
     cloud: {
         settingsSync: true,
-        version: 0
+        version: -1
     }
 };
 
